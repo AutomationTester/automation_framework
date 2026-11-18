@@ -10,6 +10,7 @@ REAL-WORLD SAFETY RULE (same idea as Notepad):
   DispatchEx() starts a NEW, separate Excel process. The user's own open workbooks live in a different
   Excel instance and are never touched. quit() closes only our instance.
 """
+import os
 from pathlib import Path
 
 from core.logger import get_logger
@@ -52,7 +53,26 @@ class ExcelPage:
         self.log.info("New workbook: %s", self.workbook.Name)
         if self.visible:
             self._verify_window_visible()
+            if not (os.environ.get("CI") or os.environ.get("JENKINS_URL")):
+                self._bring_to_foreground()
         return self
+
+    def _bring_to_foreground(self):
+        import pywintypes
+        import win32con
+        import win32gui
+
+        hwnd = self.app.Hwnd
+        try:
+            if win32gui.IsIconic(hwnd):
+                win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+            if win32gui.GetForegroundWindow() != hwnd:
+                win32gui.SetForegroundWindow(hwnd)
+        except pywintypes.error as error:
+            self.log.warning("Could not bring Excel to the foreground: %s", error)
+            return
+        if win32gui.GetForegroundWindow() != hwnd:
+            self.log.warning("Windows did not bring Excel to the foreground")
 
     def _verify_window_visible(self):
         """

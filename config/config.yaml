@@ -43,6 +43,6 @@ environments:
     notepad:
       launch_cmd: notepad.exe
     excel:
-      visible: false
+      visible: true
     cli:
       command_timeout: 60
