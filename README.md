@@ -38,9 +38,16 @@ It is used on Days 4 and 5 of the course and is the base for the mini project.
 
 ## Run
 
+On Windows, double-click `run_automation.bat` to choose an application, or run it from PowerShell:
+
+```powershell
+.\run_automation.bat --app excel --env qa
+```
+
+For direct pytest commands, start in the project root:
+
 ```bash
-cd automation_framework
-pip install -r ../requirements.txt
+python -m pip install -r requirements.txt
 # Install Node.js LTS for Allure 3; npx downloads the generator on first use.
 
 pytest                                  # everything

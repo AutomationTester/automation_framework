@@ -7,13 +7,13 @@ REM  run_automation.bat --app excel
 REM  run_automation.bat --app all -m smoke --open
 REM  run_automation.bat --app notepad --env qa --no-pdf
 REM
-REM  All arguments are passed straight to automation_framework\run_tests.py.
+REM  All arguments are passed straight to run_tests.py.
 REM  Exit code = pytest's exit code (0 = all tests passed).
 REM ============================================================================
 setlocal
 
-pushd "%~dp0automation_framework" || (
-    echo Could not find the automation_framework folder next to this file.
+pushd "%~dp0." || (
+    echo Could not open the project folder: "%~dp0"
     pause
     exit /b 1
 )
