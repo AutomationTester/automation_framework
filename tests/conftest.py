@@ -6,7 +6,7 @@ Shared fixtures and hooks. pytest loads this file automatically before running t
                                choose the application under test (or set TEST_APP; default: default_app
                                in config.yaml). Only the tests marked for that application are run.
   calculator / notepad / excel ready-to-use window objects, always cleaned up after the test
-  screenshot on failure        desktop test fails -> screenshot saved and embedded in the HTML report
+  desktop screenshots          after each passing or failing test body, saved and embedded in HTML
                                and attached to the Allure report
   allure environment           writes allure-results/environment.properties (env, OS, Python, host)
 """
@@ -137,21 +137,24 @@ def excel(excel_app):
     excel_app.close_workbook()
 
 
-# ---------------- screenshot on failure ----------------
-@pytest.hookimpl(hookwrapper=True)
+# ---------------- desktop screenshots ----------------
+@pytest.hookimpl(hookwrapper=True, tryfirst=True)
 def pytest_runtest_makereport(item, call):
     outcome = yield
     report = outcome.get_result()
-    if report.when != "call" or not report.failed or "desktop" not in item.keywords:
+    if report.when != "call" or report.skipped or "desktop" not in item.keywords:
         return
-    if not get_config(item.config.getoption("--env"))["screenshots_on_failure"]:
+    settings = get_config(item.config.getoption("--env"))
+    if report.failed and not settings["screenshots_on_failure"]:
+        return
+    if report.passed and not settings.get("screenshots_on_pass", False):
         return
 
     path = take_screenshot(item.name)
     if path is None:
         return
-    log.error("Test failed - screenshot saved: %s", path)
-    attach_png(path, "screenshot on failure")  # -> Allure report (and the PDF)
+    log.info("Screenshot saved (%s): %s", report.outcome, path)
+    attach_png(path, "screenshot on failure" if report.failed else "screenshot after pass")
 
     html_plugin = item.config.pluginmanager.getplugin("html")
     if html_plugin is not None:  # pytest-html installed -> embed the image in the report

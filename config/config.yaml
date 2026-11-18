@@ -16,6 +16,7 @@ environments:
       times: 2
       delay: 1
     screenshots_on_failure: true
+    screenshots_on_pass: true
     calculator:
       launch_cmd: calc.exe
       window_title: Calculator
@@ -35,6 +36,7 @@ environments:
       times: 3
       delay: 2
     screenshots_on_failure: true
+    screenshots_on_pass: true
     calculator:
       launch_cmd: calc.exe
       window_title: Calculator

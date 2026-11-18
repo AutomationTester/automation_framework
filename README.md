@@ -30,7 +30,7 @@ It is used on Days 4 and 5 of the course and is the base for the mini project.
 | `utils/` | Helpers: CSV/JSON/YAML readers, screenshots |
 | `tools/` | `sysinfo_cli.py`, the command-line application under test |
 | `test_data/` | Data for data-driven tests |
-| `tests/` | Test cases + `conftest.py` (fixtures, `--env`, screenshot-on-failure) |
+| `tests/` | Test cases + `conftest.py` (fixtures, `--env`, desktop screenshots) |
 | `run_tests.py` | One command: pytest + Allure HTML + PDF |
 | `allurerc.mjs` | Allure 3 report settings (name, single file, grouping, history) |
 | `tools/allure_pdf_report.py` | Converts Allure results into a PDF report |
@@ -105,7 +105,8 @@ pytest  --(allure-pytest, enabled in pytest.ini: --alluredir=allure-results)--> 
 
 - **Labels**: tests use `@allure.epic / feature / story / severity / title` (see `tests/test_calculator.py`).
 - **Steps**: page objects and the CLI runner record steps through `core/reporting.py` (`step`, `@step_method`, `attach_text`, `attach_png`). If `allure-pytest` is missing, these helpers do nothing, so the framework still runs.
-- **Attachments**: CLI stdout/stderr/exit code, the Calculator display, the saved Notepad file, and the **screenshot on failure**.
+- **Attachments**: CLI stdout/stderr/exit code, the Calculator display, the saved Notepad file, and full-screen PNGs from passing and failing desktop tests. Screenshots are taken after the test body, before fixtures close the app. They are saved in `screenshots/` and attached to pytest-html and Allure; the PDF still shows only failure screenshots. To restore failure-only capture, set `screenshots_on_pass: false` for the relevant environment in `config/config.yaml`.
+- **Jenkins desktop runs**: Run the agent in a signed-in, unlocked Windows desktop session. To download standalone PNGs from a build, archive `screenshots/*.png` from the Jenkins workspace.
 - **Environment**: `conftest.py` writes `allure-results/environment.properties` (env, OS, Python, host).
 - **History**: `allurerc.mjs` keeps `allure-history/history.jsonl`, so the report shows trends across runs.
 - **PDF options**: `--title "Sprint 42 regression"`, `--details failed` (shorter PDF), `--results DIR`, `--output FILE`.
