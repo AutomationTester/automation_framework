@@ -1,0 +1,35 @@
+# Data-driven CLI test cases for tools/sysinfo_cli.py
+# args            : arguments passed to the tool
+# expected_rc     : expected exit code
+# stdout_contains : text that must appear in standard output (optional)
+# stderr_contains : text that must appear in standard error (optional)
+
+- name: version flag
+  args: ["--version"]
+  expected_rc: 0
+  stdout_contains: "sysinfo_cli 1.0.0"
+
+- name: info as text
+  args: ["info"]
+  expected_rc: 0
+  stdout_contains: "python"
+
+- name: disk default path
+  args: ["disk"]
+  expected_rc: 0
+  stdout_contains: "STATUS   : OK"
+
+- name: disk check impossible minimum
+  args: ["disk", "--min-free-gb", "999999"]
+  expected_rc: 1
+  stderr_contains: "FAIL"
+
+- name: count missing file
+  args: ["count", "no_such_file.txt"]
+  expected_rc: 2
+  stderr_contains: "file not found"
+
+- name: unknown command
+  args: ["explode"]
+  expected_rc: 2
+  stderr_contains: "invalid choice"

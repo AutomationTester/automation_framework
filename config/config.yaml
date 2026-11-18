@@ -1,0 +1,46 @@
+# Central configuration. Pick an environment with:  pytest --env qa   (or set TEST_ENV=qa)
+default_env: dev
+
+# Application under test. Pick one with:  pytest --app excel   (or set TEST_APP=excel)
+# run_tests.py ASKS for it when started from a terminal without --app; pressing Enter uses this value.
+# Choices: calculator | notepad | excel | cli | all
+default_app: all
+
+environments:
+  dev:
+    log_level: DEBUG
+    timeouts:
+      app_start: 15        # seconds to wait for an app window to appear
+      element: 10          # seconds to wait for a control
+    retry:
+      times: 2
+      delay: 1
+    screenshots_on_failure: true
+    calculator:
+      launch_cmd: calc.exe
+      window_title: Calculator
+    notepad:
+      launch_cmd: notepad.exe
+    excel:
+      visible: true        # show the Excel window while the tests run (set false for faster, hidden runs)
+    cli:
+      command_timeout: 20
+
+  qa:
+    log_level: INFO
+    timeouts:
+      app_start: 30
+      element: 15
+    retry:
+      times: 3
+      delay: 2
+    screenshots_on_failure: true
+    calculator:
+      launch_cmd: calc.exe
+      window_title: Calculator
+    notepad:
+      launch_cmd: notepad.exe
+    excel:
+      visible: false
+    cli:
+      command_timeout: 60

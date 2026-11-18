@@ -1,0 +1,7 @@
+test_id,num1,operator,num2,expected
+CALC_01,7,+,8,15
+CALC_02,100,-,45,55
+CALC_03,12,*,12,144
+CALC_04,81,/,9,9
+CALC_05,2.5,+,0.5,3
+CALC_06,-6,*,3,-18

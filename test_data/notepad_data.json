@@ -1,0 +1,5 @@
+[
+  {"test_id": "NOTE_01", "text": "Hello from the automation framework"},
+  {"test_id": "NOTE_02", "text": "Line one\nLine two\nLine three"},
+  {"test_id": "NOTE_03", "text": "Special chars: 50% off + (tax) {id} ~ ^"}
+]
