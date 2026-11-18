@@ -89,7 +89,7 @@ python run_tests.py -m cli --open          # also open the Allure report in the 
 
 | Report | File | Built by | Best for |
 |---|---|---|---|
-| **Allure** | `allure-report/index.html` (single file) | `npx allure generate allure-results` (Allure 3, Node.js, **no Java**) | Interactive analysis: steps, attachments, grouping by epic/feature/story, severity, history/trends |
+| **Allure** | `allure-report/index.html` (single file) | `npx allure generate allure-results --clean` (Allure 3, Node.js, **no Java**) | Interactive analysis: steps, attachments, grouping by epic/feature/story, severity, history/trends |
 | **PDF** | `reports/test_report.pdf` | `python tools/allure_pdf_report.py` | Sharing and sign-off: summary + pie chart, results by feature, all tests, failures with trace/steps/screenshot, steps of every test |
 | pytest-html | `reports/report.html` | `--html=...` | Quick single-page view |
 
@@ -98,7 +98,7 @@ python run_tests.py -m cli --open          # also open the Allure report in the 
 ```
 pytest  --(allure-pytest, enabled in pytest.ini: --alluredir=allure-results)-->  allure-results/*.json
                                                                                   |            |
-                                             npx allure generate allure-results   |            |  python tools/allure_pdf_report.py
+                                     npx allure generate allure-results --clean   |            |  python tools/allure_pdf_report.py
                                                                                   v            v
                                                                allure-report/index.html    reports/test_report.pdf
 ```
@@ -115,7 +115,7 @@ pytest  --(allure-pytest, enabled in pytest.ini: --alluredir=allure-results)--> 
 Manual commands (from the project root, with Node.js LTS installed):
 
 ```bash
-npx --yes allure generate allure-results  # build allure-report/
+npx --yes allure generate allure-results --clean  # replace the generated allure-report/
 npx --yes allure open                     # serve and open it
 python tools/allure_pdf_report.py          # build reports/test_report.pdf
 ```
@@ -129,7 +129,7 @@ it does not make the `allure` package available for imports from `allurerc.mjs`.
 ## Rules for the desktop tests
 
 - Keep the desktop **unlocked** and don't touch the mouse or keyboard while desktop tests run.
-- Windows 11 Notepad reopens your previous tabs. The framework **only** opens a temp file it created and closes **only that tab** (Ctrl+W). Never call `.close()` on the Notepad window.
+- Windows 11 Notepad can restore previous tabs or reuse an open window. Tests first open a separate blank window, then open a temporary file in it. The fixture closes only that test window and leaves pre-existing windows alone.
 - The tests close Calculator when they finish.
 - Excel runs in its **own** instance (`DispatchEx`). Your open workbooks are never touched, and the instance is always quit, or its own process stopped, at the end.
 - On Linux/macOS, desktop tests are **skipped** automatically.

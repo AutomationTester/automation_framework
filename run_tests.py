@@ -103,7 +103,7 @@ def build_allure_html():
     if npx is None:
         print("!! Node.js/npx not found - skipping the Allure HTML report (install Node.js LTS, then `npm install`).")
         return None
-    cmd = [npx, "--yes", "allure", "generate", "allure-results"]
+    cmd = [npx, "--yes", "allure", "generate", "allure-results", "--clean"]
     print(">>", " ".join(cmd))
     if subprocess.call(cmd, cwd=ROOT) != 0:
         print("!! Allure report generation failed")

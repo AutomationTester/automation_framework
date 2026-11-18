@@ -105,14 +105,16 @@ def calculator(config):
 
 @pytest.fixture
 def notepad(config, tmp_path):
-    """A Notepad tab on a brand-new empty file that belongs to this test only."""
+    """A dedicated Notepad window with a brand-new file owned by the test."""
     from pages.notepad_page import NotepadPage
 
     test_file = tmp_path / "automation_note.txt"
     test_file.write_text("", encoding="utf-8")
-    page = NotepadPage(config).open_file(test_file)
-    yield page
-    page.close_tab()
+    page = NotepadPage(config)
+    try:
+        yield page.open_file(test_file)
+    finally:
+        page.close()
 
 
 @pytest.fixture(scope="module")

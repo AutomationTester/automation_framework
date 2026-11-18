@@ -1,14 +1,8 @@
-"""
-Window object for Windows 11 Notepad.
-
-REAL-WORLD LESSON: Windows 11 Notepad restores the user's previous tabs and opens new files as tabs
-in the same window. A test must never type into "whatever Notepad is open" - it could be someone's
-real document. So this class only ever works on a file the test created itself, and closes only
-that tab (Ctrl+W), never the whole window.
-"""
-import re
+"""Windows 11 Notepad automation in a dedicated window with a test-owned file."""
 import subprocess
 from pathlib import Path
+
+import win32gui
 
 from core.base_window import BaseWindow
 from core.reporting import attach_text, step_method
@@ -28,6 +22,19 @@ class NotepadPage(BaseWindow):
     def __init__(self, config):
         super().__init__(config)
         self.file_path = None
+        self._hwnd = None
+
+    def _notepad_handles(self):
+        return {window.handle for window in self.desktop.windows(class_name="Notepad")}
+
+    @staticmethod
+    def _tab_names(window):
+        return sorted(tab.window_text().removesuffix(". Unmodified.")
+                      for tab in window.descendants(control_type="TabItem"))
+
+    def _require_test_tab(self):
+        if self.title().removeprefix("*") != f"{self.file_path.name} - Notepad":
+            raise RuntimeError("The test file is no longer the active Notepad tab")
 
     @step_method("Open our own file in Notepad")
     def open_file(self, path):
@@ -35,10 +42,26 @@ class NotepadPage(BaseWindow):
         self.file_path = Path(path)
         if not self.file_path.exists():
             raise FileNotFoundError(f"Create the file before opening it: {self.file_path}")
+        # A file argument can open in a user's existing window. Open a blank window first.
+        existing = self._notepad_handles()
+        subprocess.Popen([self.config["notepad"]["launch_cmd"]])
+        handles = wait_until(lambda: self._notepad_handles() - existing, timeout=self.app_timeout,
+                             message="a new Notepad window")
+        if len(handles) != 1:
+            raise RuntimeError("Cannot identify a dedicated Notepad window")
+        hwnd, = handles
+        self.connect(handle=hwnd)
+        if self.title() != "Untitled - Notepad" or self._tab_names(self.window) != ["Untitled"]:
+            raise RuntimeError("New Notepad window is not empty; leaving restored tabs untouched")
+        self._hwnd = hwnd
+
         self.log.info("Opening %s in Notepad", self.file_path)
-        subprocess.Popen([self.config["notepad"]["launch_cmd"], str(self.file_path)])
-        # The title starts with '*' once the file has unsaved changes.
-        self.connect(title_re=rf"\*?{re.escape(self.file_path.name)} - Notepad")
+        self.press_keys("^o")
+        dialog = self.find(class_name="#32770", control_type="Window")
+        dialog.child_window(auto_id="1148", control_type="Edit").set_edit_text(str(self.file_path))
+        dialog.child_window(auto_id="1", control_type="Button").click()
+        wait_until(lambda: self.title() == f"{self.file_path.name} - Notepad", timeout=self.app_timeout,
+                   message="our file to open in the dedicated Notepad window")
         return self
 
     @property
@@ -48,6 +71,7 @@ class NotepadPage(BaseWindow):
 
     @step_method("Type text into the editor")
     def type_text(self, text):
+        self._require_test_tab()
         editor = self.find(**EDITOR)
         editor.set_focus()
         before = self.text
@@ -62,6 +86,7 @@ class NotepadPage(BaseWindow):
 
     @step_method("Save with Ctrl+S")
     def save(self):
+        self._require_test_tab()
         self.log.info("Saving %s", self.file_path.name)
         self.press_keys("^s")
         wait_until(lambda: not self.is_modified(), timeout=self.element_timeout,
@@ -74,15 +99,20 @@ class NotepadPage(BaseWindow):
         attach_text(content, f"{self.file_path.name} (on disk)")
         return content
 
-    @step_method("Close only our tab (Ctrl+W)")
-    def close_tab(self):
-        """Close only our own tab. Saves first so no 'Do you want to save?' dialog can block the run."""
-        if not self.is_open():
+    @step_method("Close the test Notepad window")
+    def close(self):
+        if self._hwnd is None or not win32gui.IsWindow(self._hwnd):
             return
-        if self.is_modified():
+        title = self.title()
+        file_title = f"{self.file_path.name} - Notepad"
+        if title == f"*{file_title}":
             self.save()
-        self.log.info("Closing tab %s", self.file_path.name)
-        self.focus()
-        self.press_keys("^w")
-        wait_until(lambda: not self.is_open(), timeout=self.element_timeout,
-                   message="our Notepad tab to close")
+        allowed_tabs = {"Untitled", self.file_path.name}
+        tabs = self._tab_names(self.window)
+        if not tabs or len(tabs) != len(set(tabs)) or not allowed_tabs.issuperset(tabs):
+            self.log.warning("Leaving the Notepad window open because it contains unexpected tabs")
+            return
+        self.log.info("Closing the test Notepad window")
+        self.window.close()
+        wait_until(lambda: not win32gui.IsWindow(self._hwnd), timeout=self.element_timeout,
+                   message="the test Notepad window to close")
