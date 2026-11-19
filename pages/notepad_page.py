@@ -51,9 +51,14 @@ class NotepadPage(BaseWindow):
             raise RuntimeError("Cannot identify a dedicated Notepad window")
         hwnd, = handles
         self.connect(handle=hwnd)
-        if self.title() != "Untitled - Notepad" or self._tab_names(self.window) != ["Untitled"]:
-            raise RuntimeError("New Notepad window is not empty; leaving restored tabs untouched")
         self._hwnd = hwnd
+        if self.title() != "Untitled - Notepad" or self._tab_names(self.window) != ["Untitled"]:
+            # Notepad restored a previous session (e.g. on a CI agent). Leave those tabs alone and
+            # work in a fresh tab of our own.
+            self.log.warning("Notepad restored earlier tabs %s; opening a new tab", self._tab_names(self.window))
+            self.press_keys("^n")
+            wait_until(lambda: self.title() == "Untitled - Notepad", timeout=self.app_timeout,
+                       message="a new empty Notepad tab")
 
         self.log.info("Opening %s in Notepad", self.file_path)
         self.press_keys("^o")
@@ -110,7 +115,10 @@ class NotepadPage(BaseWindow):
         allowed_tabs = {"Untitled", self.file_path.name}
         tabs = self._tab_names(self.window)
         if not tabs or len(tabs) != len(set(tabs)) or not allowed_tabs.issuperset(tabs):
-            self.log.warning("Leaving the Notepad window open because it contains unexpected tabs")
+            # Restored tabs belong to someone else: close only our own tab, keep the window.
+            self.log.warning("Notepad window has other tabs; closing only the test tab")
+            if self.title().removeprefix("*") == file_title:
+                self.press_keys("^w")
             return
         self.log.info("Closing the test Notepad window")
         self.window.close()
